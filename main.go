@@ -11,17 +11,18 @@ import (
 )
 
 var (
-	endpointURL, token, requestType *string
+	endpoint, requestType, targetURL, token *string
 )
 
 func init() {
-	endpointURL = flag.String("endpointURL", "", "URL for the API endpoint")
+	endpoint = flag.String("endpoint", "", "Target API endpoint, example: /organizations/:organization_name/workspaces")
 	requestType = flag.String("requestType", "", "Type of API request to perform: GET|PUT")
+	targetURL = flag.String("targetURL", "https://app.terraform.io/api/v2/", "Intended target URL for API, defaults to: https://app.terraform.io/api/v2/")
 	token = flag.String("token", os.Getenv("TOKEN"), "API token, defaults to pulling from TOKEN envronment variable")
 }
 
 func checkReqFlags() []string {
-	required := []string{"endpointURL", "requestType", "token"}
+	required := []string{"endpoint", "requestType", "targetURL", "token"}
 	var missing []string
 
 	flag.Parse()
@@ -44,7 +45,7 @@ func checkReqFlags() []string {
 }
 
 func buildRequest() (*http.Request, error) {
-	req, err := http.NewRequest(*requestType, *endpointURL, nil)
+	req, err := http.NewRequest(*requestType, *targetURL+*endpoint, nil)
 	req.Header.Add("Authorization", "Bearer "+*token)
 
 	return req, err
@@ -90,7 +91,4 @@ func main() {
 		log.Println(string([]byte(responseBody)))
 	}
 	log.Println(string([]byte(responseBody)))
-
-	fmt.Printf("Request is type: %T\n", request)
-	fmt.Println(err)
 }
