@@ -50,19 +50,23 @@ func buildRequest() (*http.Request, error) {
 	return req, err
 }
 
-func callAPI(req *http.Request) ([]byte, error) {
-	var body []byte
-	var err error
-
+func getResponse(req *http.Request) *http.Response {
 	client := &http.Client{}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("Error on response.\n[ERROR] -", err)
+		fmt.Println("Error on response.\n[ERROR] -", err)
+		os.Exit(2)
 	}
-	defer resp.Body.Close()
 
-	body, err = ioutil.ReadAll(resp.Body)
+	return resp
+}
+
+func callAPI(req *http.Request) ([]byte, error) {
+	var body []byte
+	var err error
+
+	body, err = ioutil.ReadAll(getResponse(req).Body)
 	return body, err
 }
 
@@ -89,4 +93,5 @@ func main() {
 
 	fmt.Printf("Request is type: %T\n", request)
 	fmt.Println(err)
+	// fmt.Println(*token)
 }
