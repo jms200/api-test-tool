@@ -93,5 +93,4 @@ func main() {
 
 	fmt.Printf("Request is type: %T\n", request)
 	fmt.Println(err)
-	// fmt.Println(*token)
 }
