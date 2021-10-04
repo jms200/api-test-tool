@@ -11,18 +11,19 @@ import (
 )
 
 var (
-	endpoint, requestType, targetURL, token *string
+	endpoint, payload, requestType, targetURL, token *string
+	required                                         = []string{"endpoint", "requestType", "targetURL", "token"}
 )
 
 func init() {
 	endpoint = flag.String("endpoint", "", "Target API endpoint, example: /organizations/:organization_name/workspaces")
+	payload = flag.String("payload", "./payload.json", "Path to the payload file.")
 	requestType = flag.String("requestType", "", "Type of API request to perform: GET|PUT")
-	targetURL = flag.String("targetURL", "https://app.terraform.io/api/v2/", "Intended target URL for API, defaults to: https://app.terraform.io/api/v2/")
+	targetURL = flag.String("targetURL", "https://app.terraform.io/api/v2", "Intended target URL for API, defaults to: https://app.terraform.io/api/v2/")
 	token = flag.String("token", os.Getenv("TOKEN"), "API token, defaults to pulling from TOKEN envronment variable")
 }
 
 func checkReqFlags() []string {
-	required := []string{"endpoint", "requestType", "targetURL", "token"}
 	var missing []string
 
 	flag.Parse()
@@ -45,8 +46,31 @@ func checkReqFlags() []string {
 }
 
 func buildRequest() (*http.Request, error) {
-	req, err := http.NewRequest(*requestType, *targetURL+*endpoint, nil)
+	if *requestType == "POST" {
+		return buildPostRequest()
+	}
+
+	return buildGetRequest()
+}
+
+func buildGetRequest() (*http.Request, error) {
+	req, err := http.NewRequest("GET", *targetURL+*endpoint, nil)
 	req.Header.Add("Authorization", "Bearer "+*token)
+
+	return req, err
+}
+
+func buildPostRequest() (*http.Request, error) {
+	data, err := os.Open(*payload)
+
+	if err != nil {
+		fmt.Printf("Building PUT request encountered an error: %s", err)
+		os.Exit(1)
+	}
+
+	req, err := http.NewRequest("POST", *targetURL+*endpoint, data)
+	req.Header.Add("Authorization", "Bearer "+*token)
+	req.Header.Add("Content-Type", "application/vnd.api+json")
 
 	return req, err
 }
@@ -81,7 +105,7 @@ func main() {
 
 	if len(missingFlags) != 0 {
 		fmt.Println("The following flag(s) are required, but missing: " + strings.Join(missingFlags, ", "))
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	request, err = buildRequest()
